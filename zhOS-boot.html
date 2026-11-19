@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>hzOS - Boot & Account</title>
+<style>
+  :root{
+    --bg:#0a0f1e; --card:rgba(255,255,255,.04); --line:rgba(255,255,255,.08);
+    --txt:#e6edf7; --mut:#8b9ac0; --c1:#0a2a6b; --c2:#0e5f9e; --c3:#00e5d0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;width:100%;overflow:hidden}
+  body{background:radial-gradient(circle at 50% 25%,#16204a 0%,var(--bg) 70%);color:var(--txt);
+       font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+
+  /* ===== 开机屏 ===== */
+  #boot{position:fixed;inset:0;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;
+        background:radial-gradient(circle at 50% 40%,#131c3d 0%,var(--bg) 75%);transition:opacity .7s ease}
+  .logo-box{width:180px;height:180px}
+  .logo-box svg{width:100%;height:100%;overflow:visible}
+  .seg{fill:none;stroke:url(#hzGrad);stroke-linecap:round;stroke-linejoin:round;
+       stroke-dasharray:1;stroke-dashoffset:1}
+  .s1{stroke-width:26;animation:draw .55s cubic-bezier(.4,0,.2,1) forwards}
+  .s2{stroke-width:24;animation:draw .4s cubic-bezier(.4,0,.2,1) .5s forwards}
+  .s3{stroke-width:26;animation:draw .45s cubic-bezier(.4,0,.2,1) .95s forwards}
+  .s4{stroke-width:26;animation:draw .6s  cubic-bezier(.4,0,.2,1) 1.35s forwards}
+  .s5{stroke-width:26;animation:draw .45s cubic-bezier(.4,0,.2,1) 1.9s forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  .logo-box .fillme{fill:url(#hzGrad);fill-opacity:0;animation:fadeFill .6s ease 2.35s forwards}
+  @keyframes fadeFill{to{fill-opacity:1}}
+  .logo-box.done .seg{stroke-opacity:0;transition:stroke-opacity .5s ease}
+  .logo-box.done .fillme{fill-opacity:1}
+  #bootMsg{margin-top:28px;font-size:14px;color:var(--mut);letter-spacing:1px}
+  .bar{width:180px;height:3px;background:#1b2547;border-radius:2px;margin-top:14px;overflow:hidden}
+  .bar i{display:block;height:100%;width:40%;background:linear-gradient(90deg,var(--c1),var(--c3));animation:ld 1.2s infinite}
+  @keyframes ld{0%{margin-left:-40%}100%{margin-left:100%}}
+
+  /* ===== 账户设置屏 ===== */
+  #account{display:none;opacity:0;width:100%;height:100%;transition:opacity .55s ease;
+           flex-direction:row;align-items:center;justify-content:center;gap:48px;padding:24px}
+  .side{flex:1;max-width:420px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .side .logo-box{width:130px;height:130px}
+  .name{margin-top:18px;font-size:34px;font-weight:700;letter-spacing:2px;
+        background:linear-gradient(120deg,#4d8df7,#00e5d0);-webkit-background-clip:text;color:transparent}
+  .ver{font-size:13px;color:var(--mut);margin-top:6px;letter-spacing:1px}
+
+  .card{flex:1;max-width:370px;width:100%;background:var(--card);border:1px solid var(--line);
+        border-radius:22px;padding:34px 26px;backdrop-filter:blur(16px);box-shadow:0 20px 50px rgba(0,0,0,.45)}
+  .card h2{font-size:23px;font-weight:600;text-align:center;margin-bottom:10px}
+  .card .hint{font-size:12px;color:var(--mut);text-align:center;margin-bottom:24px;line-height:1.6}
+  .fld{width:100%;padding:14px 16px;margin-bottom:15px;border-radius:12px;border:1px solid var(--line);
+       background:rgba(0,0,0,.25);color:var(--txt);font-size:15px;outline:none;transition:border .25s}
+  .fld:focus{border-color:#00b8d4;box-shadow:0 0 0 3px rgba(0,200,220,.15)}
+  .go{width:100%;padding:14px;border:0;border-radius:12px;color:#fff;font-size:16px;font-weight:600;cursor:pointer;
+      background:linear-gradient(120deg,#0e5f9e,#00c2c7);transition:transform .15s,box-shadow .2s}
+  .go:active{transform:scale(.98)}
+  #dev{margin-top:18px;font-size:11px;color:#5d6d95;text-align:center;line-height:1.5;word-break:break-all}
+
+  @media (orientation:portrait){
+    #account{flex-direction:column;gap:22px;justify-content:flex-start;padding-top:8vh}
+    .side{max-width:100%}
+    .side .logo-box{width:110px;height:110px}
+    .name{font-size:27px}
+    .card{max-width:100%}
+  }
+</style>
+</head>
+<body>
+
+<!-- 开机 -->
+<div id="boot">
+  <div class="logo-box" id="logoBox">
+    <svg viewBox="0 0 200 200">
+      <defs>
+        <linearGradient id="hzGrad" x1="20" y1="20" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#0a2a6b"/>
+          <stop offset=".55" stop-color="#0e5f9e"/>
+          <stop offset="1" stop-color="#00e5d0"/>
+        </linearGradient>
+      </defs>
+      <path class="seg s1" d="M34 176 V34" pathLength="1"/>
+      <path class="seg s2" d="M34 100 H86" pathLength="1"/>
+      <path class="seg s3" d="M104 36 H166" pathLength="1"/>
+      <path class="seg s4" d="M166 36 L104 164" pathLength="1"/>
+      <path class="seg s5" d="M104 164 H166" pathLength="1"/>
+      <g class="fillme">
+        <path d="M34 176 V34" stroke="url(#hzGrad)" stroke-width="26" stroke-linecap="round"/>
+        <path d="M34 100 H86" stroke="url(#hzGrad)" stroke-width="24" stroke-linecap="round"/>
+        <path d="M104 36 H166" stroke="url(#hzGrad)" stroke-width="26" stroke-linecap="round"/>
+        <path d="M166 36 L104 164" stroke="url(#hzGrad)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M104 164 H166" stroke="url(#hzGrad)" stroke-width="26" stroke-linecap="round"/>
+      </g>
+    </svg>
+  </div>
+  <div id="bootMsg">检测硬件...</div>
+  <div class="bar"><i></i></div>
+</div>
+
+<!-- 设置账户 -->
+<div id="account">
+  <div class="side">
+    <div class="logo-box">
+      <svg viewBox="0 0 200 200">
+        <g stroke="url(#hzGrad2)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M34 176 V34" stroke-width="26"/>
+          <path d="M34 100 H86" stroke-width="24"/>
+          <path d="M104 36 H166" stroke-width="26"/>
+          <path d="M166 36 L104 164" stroke-width="26"/>
+          <path d="M104 164 H166" stroke-width="26"/>
+        </g>
+        <defs>
+          <linearGradient id="hzGrad2" x1="20" y1="20" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#0a2a6b"/><stop offset=".55" stop-color="#0e5f9e"/><stop offset="1" stop-color="#00e5d0"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <div class="name">hzOS</div>
+    <div class="ver">Version 1.0</div>
+  </div>
+
+  <div class="card">
+    <h2>设置账户</h2>
+    <div class="hint">设置您的用户名和密码<br>留空则使用默认账户 <b style="color:#4d8df7">admin</b>（无密码）</div>
+    <input class="fld" id="uname" placeholder="用户名（留空默认 admin）" autocomplete="off">
+    <input class="fld" id="pwd" type="password" placeholder="密码（可选）">
+    <button class="go" onclick="enter()">进入系统</button>
+    <div id="dev">设备检测中...</div>
+  </div>
+</div>
+
+<script>
+  /* 开机流程 */
+  const msgs=["检测硬件...","加载 hzOS 内核 v1.0...","初始化图形界面...","准备就绪"];
+  let i=0;
+  const t=setInterval(()=>{ i<msgs.length ? document.getElementById('bootMsg').innerText=msgs[i++] : clearInterval(t); },750);
+  setTimeout(()=>document.getElementById('logoBox').classList.add('done'),2850);
+  setTimeout(()=>{
+    document.getElementById('boot').style.opacity='0';
+    setTimeout(()=>{
+      document.getElementById('boot').style.display='none';
+      const a=document.getElementById('account');
+      a.style.display='flex';
+      requestAnimationFrame(()=>a.style.opacity='1');
+    },700);
+  },3500);
+
+  /* 设备检测 */
+  const devTxt=()=>`设备: ${navigator.platform} | 屏幕: ${screen.width}x${screen.height} | 视口: ${innerWidth}x${innerHeight}`;
+  document.getElementById('dev').innerText=devTxt();
+  addEventListener('resize',()=>document.getElementById('dev').innerText=devTxt());
+
+  /* 进入系统 —— 后续桌面系统从这里接上 */
+  function enter(){
+    let u = document.getElementById('uname').value.trim();
+    if(!u) u = 'admin';
+    const p = document.getElementById('pwd').value;
+    // TODO: 后续加 localStorage 持久化 + 桌面系统初始化
+    console.log('进入系统，用户:', u, '| 密码:', p ? '已设置' : '无');
+    alert('进入系统！用户: ' + u + '\n（桌面系统待接入）');
+  }
+</script>
+</body>
+</html>

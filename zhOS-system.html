@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>hzOS</title>
+<style>
+:root{--panel:rgba(18,24,40,.94);--panel2:#141b2d;--line:rgba(255,255,255,.08);--txt:#e8edf7;--mut:#8b97ad;--accent:#4da3ff;--ok:#4ade80;--err:#ff6b6b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:radial-gradient(ellipse at 20% 10%,#1a1040,#0a0f1e 70%);color:var(--txt);font-size:13px;user-select:none;-webkit-user-select:none}
+input,textarea{font-family:inherit;user-select:text;outline:none}
+button{font-family:inherit;cursor:pointer}
+#icons{position:absolute;inset:12px 0 0 12px;display:grid;grid-template-columns:repeat(4,76px);grid-auto-rows:88px;gap:6px;align-content:start}
+.icon{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px 4px;border-radius:10px}
+.icon.sel,.icon:hover{background:rgba(255,255,255,.08)}
+.icon .ic{width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:12px;font-size:22px;background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.03))}
+.icon .nm{font-size:12px;text-align:center;max-width:72px;word-break:break-all}
+#taskbar{position:fixed;left:0;right:0;bottom:0;height:56px;background:rgba(10,14,28,.88);backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;align-items:center;padding:0 12px;gap:8px;z-index:9000}
+.tb-btn{height:38px;padding:0 12px;border-radius:9px;border:1px solid transparent;background:rgba(255,255,255,.06);color:var(--txt);display:flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap}
+.tb-btn.active{background:rgba(77,163,255,.18);border-color:rgba(77,163,255,.35)}
+.tb-sp{flex:1}
+#startmenu{position:fixed;left:12px;bottom:66px;width:240px;background:var(--panel);backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:14px;padding:12px;z-index:9500;box-shadow:0 18px 50px rgba(0,0,0,.5);display:none}
+#startmenu.show{display:block}
+.sm-t{font-size:11px;color:var(--mut);margin:4px 6px 8px}
+.sm-i{display:flex;align-items:center;gap:10px;padding:10px;border-radius:9px}
+.sm-i:hover{background:rgba(255,255,255,.08)}
+.win{position:absolute;background:var(--panel);backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden;min-width:280px;min-height:180px}
+.win.max{left:0!important;top:0!important;width:100%!important;height:100%!important;border-radius:0}
+.wh{height:40px;flex:none;display:flex;align-items:center;padding:0 10px;gap:8px;background:rgba(255,255,255,.04);border-bottom:1px solid var(--line);cursor:move}
+.wt{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wc{width:28px;height:28px;border:none;border-radius:7px;background:transparent;color:var(--mut);font-size:14px}
+.wc:hover{background:rgba(255,255,255,.1);color:var(--txt)}
+.wc.x:hover{background:rgba(255,107,107,.2);color:var(--err)}
+.wb{flex:1;overflow:auto;padding:12px}
+.btn{border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--txt);border-radius:8px;padding:7px 12px;font-size:12px}
+.btn:hover{background:rgba(255,255,255,.12)}
+.btn.p{background:var(--accent);border-color:var(--accent);color:#fff}
+.inp,.ta{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:9px 10px;font-size:13px}
+.ta{resize:vertical;min-height:120px;line-height:1.6}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.fm-i{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px}
+.fm-i:hover{background:rgba(255,255,255,.06)}
+.fm-i .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fm-i .s{font-size:11px;color:var(--mut)}
+.fm-i.d .n{color:#7db8ff}
+.term{height:100%;background:#05070c;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.6;padding:12px;overflow-y:auto;overflow-x:hidden;color:#d6e2f0}
+.term .ln{white-space:pre-wrap;word-break:break-word}
+.term .e{color:var(--err)}.term .o{color:var(--ok)}.term .i{color:#7db8ff}
+.tline{display:flex;align-items:baseline}
+.tline .pr{color:var(--ok);margin-right:6px;flex:none;white-space:pre}
+.tinp{flex:1;min-width:0;border:none;background:transparent;color:#d6e2f0;padding:0;font:inherit;caret-color:#7db8ff}
+.bframe{flex:1;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+.bframe iframe{width:100%;height:100%;border:0}
+.sr{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.sr:last-child{border-bottom:none}
+.sl b{font-size:13px}.sl div{font-size:11px;color:var(--mut);margin-top:3px}
+.seg{display:flex;background:rgba(0,0,0,.25);border-radius:8px;padding:3px}
+.seg div{padding:6px 12px;border-radius:6px;font-size:12px;color:var(--mut)}
+.seg div.on{background:rgba(77,163,255,.2);color:var(--txt)}
+.sw{width:42px;height:24px;border-radius:20px;background:rgba(255,255,255,.15);position:relative}
+.sw::after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s}
+.sw.on{background:var(--accent)}.sw.on::after{left:21px}
+.wpg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.wp{height:56px;border-radius:8px;border:2px solid transparent}
+.wp.on{border-color:var(--accent)}
+#ctx{position:fixed;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px;z-index:9999;box-shadow:0 12px 30px rgba(0,0,0,.5);display:none;min-width:130px}
+#ctx div{padding:8px 10px;border-radius:6px;font-size:12px}
+#ctx div:hover{background:rgba(255,255,255,.08)}
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:10px 16px;border-radius:10px;z-index:99999;opacity:0;transition:.25s;pointer-events:none;font-size:12px}
+#toast.show{opacity:1}
+@media(max-width:768px){
+  #icons{grid-template-columns:repeat(3,82px);grid-auto-rows:96px;inset:14px 0 0 14px}
+  .icon .ic{width:48px;height:48px;font-size:24px}.icon .nm{font-size:13px}
+  #startmenu{width:min(92vw,320px);left:10px}
+  .sm-i{padding:13px}
+  .win{position:fixed!important;left:0!important;top:0!important;width:100vw!important;height:calc(100dvh - 56px)!important;border-radius:0!important;min-width:0;min-height:0}
+  .wh{cursor:default;height:44px}.wc{width:34px;height:34px}
+  .inp,.ta{font-size:16px}
+  .fm-i{padding:12px}.btn{padding:9px 14px}
+  .term{font-size:14px}
+}
+</style>
+</head>
+<body>
+<div id="icons"></div>
+<div id="taskbar">
+  <button class="tb-btn" id="bStart">☰ 开始</button>
+  <div id="tbWins" style="display:flex;gap:6px;overflow-x:auto;max-width:55vw"></div>
+  <div class="tb-sp"></div><div class="tb-btn" id="bClock" style="background:none"></div>
+</div>
+<div id="startmenu"></div>
+<div id="ctx"></div>
+<div id="toast"></div>
+
+<script>
+/* ---------- 工具 ---------- */
+const LS={fs:'hzfs',note:'hznote',cfg:'hzcfg'};
+const WP=['radial-gradient(ellipse at 20% 10%,#1a1040,#0a0f1e 70%)','radial-gradient(ellipse at 80% 20%,#2a0f3e,#0a0f1e 70%)','radial-gradient(ellipse at 50% 80%,#0a2e2a,#0a0f1e 70%)','linear-gradient(135deg,#1a1030,#0a0f1e 60%,#102030)','linear-gradient(135deg,#0a1a2e,#1a0a2e 60%,#2e0a1a)'];
+const isTouch=matchMedia('(pointer:coarse)').matches||/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+const notify=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1800)};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const jget=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}};
+
+/* ---------- 配置 ---------- */
+let CFG=jget(LS.cfg,{openMode:isTouch?'single':'double',wp:0});
+if(!CFG.openMode)CFG.openMode=isTouch?'single':'double';
+const saveCfg=()=>localStorage.setItem(LS.cfg,JSON.stringify(CFG));
+function applyCfg(){document.body.style.background=WP[CFG.wp||0];saveCfg()}
+
+/* ---------- 文件系统 ---------- */
+let FS=jget(LS.fs,null)||{cwd:[],tree:{type:'dir',children:{'文档':{type:'dir',children:{'欢迎.txt':{type:'file',content:'欢迎使用 hzOS！\n这是纯前端模拟系统，数据存在浏览器本地。\n试试终端输入 help。',mtime:Date.now()}}},'下载':{type:'dir',children:{}},'readme.md':{type:'file',content:'# hzOS\n单文件网页系统 v1.0',mtime:Date.now()}}}};
+if(!FS.tree)FS={cwd:[],tree:{type:'dir',children:{}}};
+const saveFS=()=>localStorage.setItem(LS.fs,JSON.stringify(FS));
+const jn=(a,b)=>[...a,...String(b).split('/').filter(x=>x&&x!=='.')];
+const par=p=>p.slice(0,-1),base=p=>p[p.length-1]||'/';
+function getNode(p){let n=FS.tree;for(const k of p){if(!n.children||!n.children[k])return null;n=n.children[k]}return n}
+function putNode(p,v){let n=FS.tree;for(let i=0;i<p.length-1;i++){const k=p[i];if(!n.children[k])n.children[k]={type:'dir',children:{}};n=n.children[k]}n.children[p[p.length-1]]=v}
+function delNode(p){if(!p.length)return false;const pa=getNode(par(p));if(!pa||!pa.children[base(p)])return false;delete pa.children[base(p)];return true}
+function resolve(s){if(!s||s==='.')return[...FS.cwd];if(s==='/')return[];if(s[0]==='/')return s.split('/').filter(Boolean);return jn(FS.cwd,s)}
+
+/* ---------- 应用定义 ---------- */
+const APPS={
+  file:{n:'文件管理器',i:'📁',w:620,h:420,f:renderFile},
+  browser:{n:'浏览器',i:'🌐',w:720,h:500,f:renderBrowser},
+  term:{n:'终端',i:'💻',w:620,h:420,f:renderTerm},
+  notes:{n:'记事本',i:'📝',w:560,h:420,f:renderNotes},
+  settings:{n:'设置',i:'⚙️',w:480,h:440,f:renderSettings}
+};
+const wins={};let zTop=100,focusK=null;
+
+/* ---------- 桌面图标 ---------- */
+function buildIcons(){
+  const box=document.getElementById('icons');box.innerHTML='';
+  Object.entries(APPS).forEach(([k,a])=>{
+    const d=document.createElement('div');d.className='icon';
+    d.innerHTML=`<div class="ic">${a.i}</div><div class="nm">${a.n}</div>`;
+    if(CFG.openMode==='single'){d.addEventListener('click',()=>openApp(k))}
+    else{
+      let t=null;
+      d.addEventListener('click',()=>{clearTimeout(t);t=setTimeout(()=>{[...box.children].forEach(x=>x.classList.remove('sel'));d.classList.add('sel')},250)});
+      d.addEventListener('dblclick',()=>{clearTimeout(t);openApp(k)});
+    }
+    box.appendChild(d);
+  });
+}
+
+/* ---------- 窗口 ---------- */
+function openApp(k){
+  if(wins[k]){focusWin(k);return}
+  const a=APPS[k],el=document.createElement('div');el.className='win';
+  const w=Math.min(a.w,innerWidth-20),h=Math.min(a.h,innerHeight-96);
+  el.style.cssText=`width:${w}px;height:${h}px;left:${Math.max(10,(innerWidth-w)/2)}px;top:${Math.max(10,(innerHeight-56-h)/2)}px`;
+  el.innerHTML=`<div class="wh"><span>${a.i}</span><span class="wt">${a.n}</span>
+    <div>${innerWidth>768?`<button class="wc" data-a="min">–</button><button class="wc" data-a="max">▢</button>`:''}<button class="wc x" data-a="close">×</button></div></div>
+    <div class="wb"></div>`;
+  document.body.appendChild(el);
+  wins[k]={el,min:false,max:false,prev:null};
+  el.querySelectorAll('.wc').forEach(b=>b.onclick=e=>{e.stopPropagation();
+    const act=b.dataset.a;
+    if(act==='close')closeWin(k);
+    else if(act==='min'){wins[k].min=true;el.style.display='none';taskbar()}
+    else{maxWin(k)}});
+  el.addEventListener('mousedown',()=>focusWin(k));
+  el.addEventListener('touchstart',()=>focusWin(k),{passive:true});
+  if(innerWidth>768)drag(el,k);
+  focusWin(k);a.f(el.querySelector('.wb'),k);
+}
+function focusWin(k){const w=wins[k];if(!w)return;zTop++;w.el.style.zIndex=zTop;focusK=k;if(w.min){w.min=false;w.el.style.display='flex'}taskbar()}
+function closeWin(k){const w=wins[k];if(!w)return;w.el.remove();delete wins[k];if(focusK===k)focusK=null;taskbar()}
+function maxWin(k){const w=wins[k];if(!w)return;w.max=!w.max;
+  if(w.max){w.prev=w.el.style.cssText;w.el.classList.add('max')}
+  else{w.el.classList.remove('max');w.el.style.cssText=w.prev||''}}
+function drag(el,k){
+  const h=el.querySelector('.wh');let d=false,sx,sy,ox,oy;
+  h.addEventListener('mousedown',e=>{if(e.target.closest('.wc'))return;d=true;sx=e.clientX;sy=e.clientY;ox=el.offsetLeft;oy=el.offsetTop;e.preventDefault()});
+  window.addEventListener('mousemove',e=>{if(!d)return;
+    el.style.left=Math.max(0,Math.min(e.clientX-sx,innerWidth-el.offsetWidth))+'px';
+    el.style.top=Math.max(0,Math.min(e.clientY-sy,innerHeight-56-el.offsetHeight))+'px'});
+  window.addEventListener('mouseup',()=>d=false);
+}
+function taskbar(){
+  const b=document.getElementById('tbWins');b.innerHTML='';
+  Object.entries(wins).forEach(([k,w])=>{
+    const el=document.createElement('button');el.className='tb-btn'+(focusK===k?' active':'');
+    el.textContent=(w.min?'▸ ':'')+APPS[k].i+' '+APPS[k].n;
+    el.onclick=()=>focusWin(k);b.appendChild(el);
+  });
+}
+
+/* ---------- 开始菜单 ---------- */
+const sm=document.getElementById('startmenu');
+document.getElementById('bStart').onclick=e=>{e.stopPropagation();
+  sm.classList.toggle('show');
+  sm.innerHTML='<div class="sm-t">应用程序</div>'+Object.entries(APPS).map(([k,a])=>`<div class="sm-i" data-k="${k}"><span style="font-size:18px;width:24px;text-align:center">${a.i}</span><span>${a.n}</span></div>`).join('');
+  sm.querySelectorAll('.sm-i').forEach(i=>i.onclick=()=>{sm.classList.remove('show');openApp(i.dataset.k)});
+};
+document.addEventListener('click',e=>{if(!sm.contains(e.target)&&e.target.id!=='bStart')sm.classList.remove('show');hideCtx()});
+setInterval(()=>document.getElementById('bClock').textContent=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),1000);
+
+/* ---------- 右键/长按菜单 ---------- */
+const ctx=document.getElementById('ctx');
+function showCtx(e,items){
+  ctx.innerHTML='';ctx.style.display='block';
+  items.forEach(([t,fn])=>{const d=document.createElement('div');d.textContent=t;d.onclick=()=>{hideCtx();fn()};ctx.appendChild(d)});
+  ctx.style.left=Math.min(e.clientX,innerWidth-150)+'px';
+  ctx.style.top=Math.min(e.clientY,innerHeight-ctx.offsetHeight-60)+'px';
+}
+function hideCtx(){ctx.style.display='none'}
+
+/* ---------- 文件管理器 ---------- */
+function refreshFile(){const b=document.getElementById('b-file');if(b)renderFile(b)}
+function renderFile(box){
+  box.innerHTML=`<div class="row"><button class="btn" data-a="up">↑ 上级</button><button class="btn p" data-a="nf">＋文件夹</button><button class="btn" data-a="nw">＋文件</button>
+    <input class="inp" id="fms" placeholder="搜索…" style="flex:1;min-width:90px;margin:0"><span id="fmp" style="color:var(--mut);font-size:11px"></span></div>
+    <div id="fml"></div>`;
+  const list=box.querySelector('#fml'),sEl=box.querySelector('#fms'),pEl=box.querySelector('#fmp');
+  function draw(){
+    const n=getNode(FS.cwd);pEl.textContent='/'+FS.cwd.join('/');
+    if(!n||n.type!=='dir'){FS.cwd=[];return draw()}
+    let its=Object.entries(n.children||{}).map(([k,v])=>({k,v}));
+    const q=sEl.value.trim().toLowerCase();if(q)its=its.filter(i=>i.k.toLowerCase().includes(q));
+    its.sort((a,b)=>(a.v.type===b.v.type?a.k.localeCompare(b.k):(a.v.type==='dir'?-1:1)));
+    list.innerHTML=its.length?its.map(i=>`<div class="fm-i ${i.v.type==='dir'?'d':''}" data-k="${esc(i.k)}"><span>${i.v.type==='dir'?'📁':'📄'}</span><span class="n">${esc(i.k)}</span><span class="s">${i.v.type==='dir'?'':(i.v.content||'').length+' B'}</span></div>`).join(''):'<div style="padding:20px;color:var(--mut)">空文件夹</div>';
+    list.querySelectorAll('.fm-i').forEach(it=>{
+      const k=it.dataset.k,open=()=>{const p=jn(FS.cwd,k),n=getNode(p);if(!n)return;if(n.type==='dir'){FS.cwd=p;saveFS();draw()}else editFile(p,n)};
+      it.addEventListener('click',()=>{[...list.children].forEach(x=>x.style.background='');it.style.background='rgba(255,255,255,.08)'});
+      it.addEventListener('dblclick',open);
+      let tm=null;
+      it.addEventListener('touchstart',e=>{clearTimeout(tm);tm=setTimeout(()=>itemMenu(e,k),450)},{passive:true});
+      it.addEventListener('touchend',()=>clearTimeout(tm));
+      it.addEventListener('contextmenu',e=>{e.preventDefault();itemMenu(e,k)});
+    });
+  }
+  function itemMenu(e,k){
+    e.preventDefault();
+    showCtx(e,[['打开',()=>{const p=jn(FS.cwd,k),n=getNode(p);if(n&&n.type==='dir'){FS.cwd=p;saveFS();draw()}else editFile(p,n)}],
+      ['重命名',()=>{const nk=prompt('新名称',k);if(!nk||nk===k)return;const op=jn(FS.cwd,k),np=jn(FS.cwd,nk);if(getNode(np))return notify('已存在');putNode(np,getNode(op));delNode(op);saveFS();draw()}],
+      ['删除',()=>{if(confirm('删除「'+k+'」？')){delNode(jn(FS.cwd,k));saveFS();draw();notify('已删除')}}]]);
+  }
+  sEl.oninput=draw;
+  box.querySelector('[data-a="up"]').onclick=()=>{if(FS.cwd.length){FS.cwd=par(FS.cwd);saveFS();draw()}};
+  box.querySelector('[data-a="nf"]').onclick=()=>mk('dir');
+  box.querySelector('[data-a="nw"]').onclick=()=>mk('file');
+  function mk(t){const nm=prompt(t==='dir'?'文件夹名':'文件名',t==='dir'?'新文件夹':'新建文件.txt');if(!nm)return;const p=jn(FS.cwd,nm);if(getNode(p))return notify('已存在');putNode(p,{type:t,content:'',mtime:Date.now()});saveFS();draw()}
+  draw();
+}
+function editFile(p,n){
+  const k='edit'+Date.now(),el=document.createElement('div');el.className='win';
+  el.style.cssText=`width:${Math.min(560,innerWidth-20)}px;height:${Math.min(420,innerHeight-96)}px;left:${(innerWidth-Math.min(560,innerWidth-20))/2}px;top:${(innerHeight-56-Math.min(420,innerHeight-96))/2}px`;
+  el.innerHTML=`<div class="wh"><span>📄</span><span class="wt">${esc(base(p))}</span><div><button class="wc x">×</button></div></div>
+    <div class="wb" style="display:flex;flex-direction:column;gap:8px"><textarea class="ta" style="flex:1" id="tx"></textarea>
+    <div class="row"><button class="btn p" id="sv">保存</button><button class="btn" id="ex">导出</button></div></div>`;
+  document.body.appendChild(el);wins[k]={el,min:false,max:false};
+  el.querySelector('.wc').onclick=()=>closeWin(k);el.addEventListener('mousedown',()=>focusWin(k));
+  if(innerWidth>768)drag(el,k);focusWin(k);
+  const tx=el.querySelector('#tx');tx.value=n.content||'';
+  el.querySelector('#sv').onclick=()=>{n.content=tx.value;n.mtime=Date.now();saveFS();refreshFile();notify('已保存')};
+  el.querySelector('#ex').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([tx.value],{type:'text/plain'}));a.download=base(p);a.click()};
+}
+
+/* ---------- 记事本 ---------- */
+let note=jget(LS.note,{title:'未命名',content:''});
+function renderNotes(box){
+  box.innerHTML=`<div class="row"><input class="inp" id="ntT" value="${esc(note.title)}" style="flex:1;margin:0"><button class="btn p" id="ntS">存到文件</button><button class="btn" id="ntE">导出</button></div>
+    <textarea class="ta" id="ntB" style="height:calc(100% - 52px);min-height:180px"></textarea>`;
+  const t=box.querySelector('#ntT'),b=box.querySelector('#ntB');b.value=note.content||'';
+  const auto=()=>{note={title:t.value,content:b.value};localStorage.setItem(LS.note,JSON.stringify(note))};
+  t.oninput=auto;b.oninput=auto;
+  box.querySelector('#ntS').onclick=()=>{const p=jn(['文档'],(t.value||'未命名')+'.txt');putNode(p,{type:'file',content:b.value,mtime:Date.now()});saveFS();notify('已存入 文档/')};
+  box.querySelector('#ntE').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([b.value],{type:'text/plain'}));a.download=(t.value||'note')+'.txt';a.click()};
+}
+
+/* ---------- 浏览器 ---------- */
+function renderBrowser(box){
+  box.innerHTML=`<div class="row"><button class="btn" id="bb">←</button><button class="btn" id="br">↻</button><input class="inp" id="bu" style="flex:1;margin:0" placeholder="网址或搜索"><button class="btn p" id="bg">前往</button></div>
+    <div class="bframe" style="height:calc(100% - 46px)"><iframe id="bf" src="about:blank"></iframe></div>`;
+  const u=box.querySelector('#bu'),f=box.querySelector('#bf');
+  const go=()=>{let v=u.value.trim();if(!v)return;
+    if(!/^https?:\/\//i.test(v))v=/^[\w-]+(\.[\w-]+)+/i.test(v)?'https://'+v:'https://www.bing.com/search?q='+encodeURIComponent(v);
+    u.value=v;f.src=v};
+  box.querySelector('#bg').onclick=go;u.onkeydown=e=>{if(e.key==='Enter')go()};
+  box.querySelector('#br').onclick=()=>{f.src=f.src};
+  box.querySelector('#bb').onclick=()=>{try{f.contentWindow.history.back()}catch{notify('无法后退')}};
+}
+
+/* ---------- 终端（手机适配） ---------- */
+function renderTerm(box){
+  box.style.padding='0';
+  box.innerHTML='<div class="term" id="term"></div>';
+  const out=box.querySelector('#term');let hist=[],hi=0,inp=null;
+  const sc=()=>requestAnimationFrame(()=>{out.scrollTop=out.scrollHeight});
+  const pr=()=>'$'+(FS.cwd.length?'/'+FS.cwd.join('/'):'');
+  const line=(c,t)=>{const d=document.createElement('div');d.className='ln'+(c?' '+c:'');d.textContent=t;out.appendChild(d);sc()};
+  line('i','hzOS Shell v1.0 — 输入 help 查看命令');
+  function newInput(){
+    const row=document.createElement('div');row.className='tline';
+    const p=document.createElement('span');p.className='pr';p.textContent=pr()+' ';
+    const i=document.createElement('input');i.className='tinp';i.autocomplete='off';i.autocapitalize='off';i.spellcheck=false;
+    row.appendChild(p);row.appendChild(i);out.appendChild(row);sc();
+    i.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){e.preventDefault();const v=i.value;i.disabled=true;run(v)}
+      else if(e.key==='ArrowUp'){e.preventDefault();if(hi>0){hi--;i.value=hist[hi]||''}}
+      else if(e.key==='ArrowDown'){e.preventDefault();if(hi<hist.length-1){hi++;i.value=hist[hi]||''}else{hi=hist.length;i.value=''}}
+      else if(e.key==='Tab'){e.preventDefault();const ms=Object.keys(CMD).filter(c=>c.startsWith(i.value.trim()));if(ms.length===1)i.value=ms[0]+' '}
+    });
+    setTimeout(()=>i.focus(),30);inp=i;
+  }
+  function run(v){
+    line('',pr()+' '+v);
+    if(v.trim()){hist.push(v);hi=hist.length}
+    const [c,...a]=v.trim().split(/\s+/);
+    if(c&&CMD[c]){const r=CMD[c](a);if(r&&r.cd){FS.cwd=r.cd;saveFS();refreshFile()}else if(r&&r.msg!==undefined)line(r.cls||'',r.msg);else if(typeof r==='string')line('',r);if(c==='clear')out.innerHTML=''}
+    else if(c)line('e','hzsh: 未找到命令: '+c);
+    newInput();
+  }
+  const CMD={
+    help:()=>'可用: help ls pwd cd mkdir touch rm cat echo calc clear history neofetch open about',
+    ls:()=>{const n=getNode(FS.cwd);if(!n)return'';const ks=Object.keys(n.children||{});return ks.length?ks.map(k=>n.children[k].type==='dir'?'<d>'+k+'</d>':k).join('  '):'(空)';},
+    pwd:()=>pr(),
+    cd:(a)=>{const p=resolve(a[0]||'/'),n=getNode(p);if(n&&n.type==='dir')return{cd:p};return{msg:'无此目录',cls:'e'}},
+    mkdir:(a)=>{if(!a[0])return{msg:'用法: mkdir 名',cls:'e'};const p=jn(FS.cwd,a[0]);if(getNode(p))return{msg:'已存在',cls:'e'};putNode(p,{type:'dir',children:{}});saveFS();refreshFile();return{msg:'已创建 '+a[0]+'/',cls:'o'}},
+    touch:(a)=>{if(!a[0])return{msg:'用法: touch 名',cls:'e'};const p=jn(FS.cwd,a[0]);if(getNode(p))return{msg:'已存在',cls:'e'};putNode(p,{type:'file',content:'',mtime:Date.now()});saveFS();refreshFile();return{msg:'已创建 '+a[0],cls:'o'}},
+    rm:(a)=>{if(!a[0])return{msg:'用法: rm 名',cls:'e'};if(delNode(jn(FS.cwd,a[0]))){saveFS();refreshFile();return{msg:'已删除 '+a[0],cls:'o'}}return{msg:'不存在',cls:'e'}},
+    cat:(a)=>{if(!a[0])return{msg:'用法: cat 文件',cls:'e'};const n=getNode(resolve(a[0]));if(!n)return{msg:'不存在',cls:'e'};if(n.type==='dir')return{msg:a[0]+' 是文件夹',cls:'e'};return{msg:n.content||'(空)'}},
+    echo:(a)=>a.join(' '),
+    calc:(a)=>{try{return{msg:a.join(' ')+' = '+Function('"use strict";return('+a.join(' ')+')')()}}catch(e){return{msg:'计算错误',cls:'e'}}},
+    clear:()=>{out.innerHTML='';return{msg:''}},
+    history:()=>({msg:hist.join('\n')}),
+    neofetch:()=>({msg:'hzOS v1.0\nShell: hzsh\nUser: admin\nPlatform: '+navigator.platform+'\nScreen: '+screen.width+'x'+screen.height+'\nView: '+innerWidth+'x'+innerHeight,cls:'i'}),
+    open:(a)=>{const k=a[0]&&Object.keys(APPS).find(x=>x===a[0]||APPS[x].n===a[0]);if(!k)return{msg:'用法: open ' +Object.keys(APPS).join('|'),cls:'e'};openApp(k);return{msg:'已打开 '+APPS[k].n,cls:'o'}},
+    about:()=>({msg:'hzOS v1.0 内部测试版 — 浏览器仿真桌面',cls:'i'})
+  };
+  // 点终端任意处聚焦输入（手机唤键盘）
+  out.addEventListener('click',()=>{if(inp&&!inp.disabled)inp.focus()});
+  window.addEventListener('resize',sc);
+  newInput();
+}
+
+/* ---------- 设置 ---------- */
+function renderSettings(box){
+  box.innerHTML=`
+    <div class="sr"><div class="sl"><b>打开方式</b><div>桌面图标的触发方式</div></div>
+      <div class="seg"><div data-m="single" class="${CFG.openMode==='single'?'on':''}">单击</div><div data-m="double" class="${CFG.openMode==='double'?'on':''}">双击</div></div></div>
+    <div class="sr"><div class="sl"><b>桌面壁纸</b></div></div>
+    <div class="wpg">${WP.map((w,i)=>`<div class="wp ${CFG.wp===i?'on':''}" data-w="${i}" style="background:${w}"></div>`).join('')}</div>
+    <div class="sr" style="margin-top:12px"><div class="sl"><b>存储数据</b><div>文件系统 / 记事 / 配置</div></div><button class="btn" id="wipe">清空</button></div>
+    <div class="sr"><div class="sl"><b>关于</b><div>hzOS Version 1.0 内部测试版</div></div><span style="font-size:11px;color:var(--mut)">${navigator.platform}</span></div>`;
+  box.querySelectorAll('.seg div').forEach(d=>d.onclick=()=>{CFG.openMode=d.dataset.m;saveCfg();buildIcons();renderSettings(box);notify('已切换为'+d.textContent+'打开')});
+  box.querySelectorAll('.wp').forEach(d=>d.onclick=()=>{CFG.wp=+d.dataset.w;applyCfg();renderSettings(box)});
+  box.querySelector('#wipe').onclick=()=>{if(confirm('清空所有文件、记事和设置？不可恢复。')){localStorage.clear();location.reload()}};
+}
+
+/* ---------- 启动 ---------- */
+applyCfg();buildIcons();taskbar();
+</script>
+</body>
+</html>
